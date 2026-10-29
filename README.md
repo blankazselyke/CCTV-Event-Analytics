@@ -67,7 +67,7 @@ to create the virtual environment.
 ## Architecture overview
 
 ```mermaid
-flowchart LR
+flowchart TD
   User -->|free text and camera ID| Service[SituationService]
   Service -->|create_situation| AI[AIModel port]
   AI -->|raw structure| Service
@@ -200,6 +200,23 @@ one event at a time. Calling `process(camera_event)` directly is useful when a
 caller intentionally chooses the event; it does not itself enforce batch
 ordering.
 
+### Concrete Situation states
+
+```mermaid
+stateDiagram-v2
+  [*] --> OPEN: first SituationEvent matches
+  [*] --> COMPLETED: one-event Situation matches
+  OPEN --> COMPLETED: final SituationEvent matches
+  OPEN --> EXPIRED: event-time gap exceeds wait time
+  COMPLETED --> [*]
+  EXPIRED --> [*]
+```
+
+Wait time is measured between matches using Camera Event timestamps. After each
+match, the gap timer starts again. Expiry is lazy: an overdue `OPEN` run changes
+to `EXPIRED` when the next Camera Event for that camera is processed. A
+one-event Situation moves directly from the initial state to `COMPLETED`.
+
 ## Mock strategy and tests
 
 The mocks replace perception with deterministic fixture results. This makes the
@@ -274,3 +291,212 @@ Claude. I used GitHub Copilot to write the code based on my instructions. When
 I found an error, I iterated on the implementation and tests until the solution
 was sufficient. GitHub Copilot also helped write the documentation and
 diagrams.
+
+## Extra diagrams
+
+### UML class diagram
+
+```mermaid
+classDiagram
+direction TB
+
+class CameraEvent {
+  +id: int
+  +camera_id: int
+  +timestamp: datetime
+  +frame_ref: str
+  +video_ref: str
+}
+class Situation {
+  +id: int
+  +description: str
+  +camera_id: int
+  +wait_time_seconds: int
+  +cooldown_seconds: int
+}
+class SituationEvent {
+  +situation_id: int
+  +position: int
+  +description: str
+  +evidence: EvidenceType
+}
+class ConcreteSituation {
+  +id: int
+  +situation_id: int
+  +status: ConcreteSituationStatus
+  +started_at: datetime
+  +last_match_at: datetime
+  +completed_at: Optional[datetime]
+}
+class Match {
+  +concrete_situation_id: int
+  +position: int
+  +camera_event_id: int
+  +confidence: float
+  +matched_at: datetime
+}
+class Alert {
+  +id: int
+  +situation_id: int
+  +description: str
+  +concrete_situation_id: int
+  +created_at: datetime
+  +explanation: str
+}
+class Evaluation {
+  +id: int
+  +camera_event_id: int
+  +situation_id: int
+  +position: int
+  +answer: Answer
+  +confidence: float
+}
+class HandledCameraEvent {
+  +camera_event_id: int
+  +handled_at: datetime
+}
+class EvidenceRequest {
+  +camera_event_id: int
+  +evidence_type: EvidenceType
+  +evidence_ref: str
+  +question: str
+}
+class EvaluatorResult {
+  +answer: Answer
+  +confidence: float
+}
+class EventTracker {
+  +process(camera_event: CameraEvent): list~Alert~
+  +process_unhandled(): int
+}
+class Evaluator {
+  +check(camera_event: CameraEvent, situation_event: SituationEvent): EvaluatorResult
+}
+class SituationService {
+  +create(text: str, camera_id: int): Situation
+}
+class AIModel {
+  <<Protocol>>
+  +check_event(request: EvidenceRequest): EvaluatorResult
+  +create_situation(text: str): object
+}
+class MockAIModel {
+  +check_event(request: EvidenceRequest): EvaluatorResult
+  +create_situation(text: str): object
+}
+class MockCameraEventDetector {
+  +seed(): int
+}
+
+Situation "1" *-- "1..*" SituationEvent : ordered events
+Situation "1" --> "0..*" ConcreteSituation : runs
+ConcreteSituation "1" *-- "0..*" Match : matched events
+Match "0..*" --> "1" CameraEvent : matched against
+ConcreteSituation "1" --> "0..1" Alert : completes as
+Alert "0..*" --> "1" Situation : belongs to
+Evaluation "0..*" --> "1" CameraEvent : evaluates
+Evaluation "0..*" --> "1" Situation : for rule
+HandledCameraEvent "0..1" --> "1" CameraEvent : marks handled
+EventTracker --> Evaluator : calls
+EventTracker --> CameraEvent : processes
+Evaluator --> AIModel : checks evidence
+Evaluator ..> EvidenceRequest : builds
+Evaluator ..> EvaluatorResult : returns
+AIModel ..> EvaluatorResult : returns
+SituationService --> AIModel : creates rule with
+SituationService --> Situation : persists
+AIModel <|.. MockAIModel : implemented by
+MockCameraEventDetector --> CameraEvent : seeds fixture rows
+```
+
+### Sequence diagram: creating a Situation
+
+```mermaid
+sequenceDiagram
+  actor Caller
+  participant Service as SituationService
+  participant AI as AIModel port
+  participant DB as SQLite database
+
+  Caller->>Service: create(text, camera_id)
+  Service->>AI: create_situation(text)
+  alt model call succeeds
+    AI-->>Service: raw structure (object)
+    Service->>Service: validate with Pydantic and apply defaults
+    alt valid structure
+      Service->>DB: save Situation and ordered SituationEvents
+      Service->>DB: commit
+      Service-->>Caller: persisted Situation
+    else invalid structure
+      Service-->>Caller: raise InvalidSituationError
+    end
+  else model call fails
+    AI-->>Service: raise model error
+    Service-->>Caller: propagate error
+  end
+```
+
+The AI call returns an untrusted structure; Pydantic validation happens before
+database persistence. A valid Situation is committed and logged immediately.
+Invalid structures raise `InvalidSituationError`. Model-call or database errors
+are not converted into a successful-looking Situation.
+
+### Sequence diagram: processing Camera Events
+
+```mermaid
+sequenceDiagram
+  participant Detector as MockCameraEventDetector
+  participant DB as SQLite database
+  participant Tracker as EventTracker
+  participant Evaluator
+  participant AI as AIModel port
+
+  Detector->>DB: seed fixture Camera Events
+  loop until no unhandled event remains
+    Tracker->>DB: begin transaction/savepoint
+    Tracker->>DB: fetch earliest unhandled by timestamp, then ID
+    DB-->>Tracker: Camera Event or none
+    alt no unhandled event
+      Tracker->>DB: finish transaction/savepoint
+    else event found
+      Tracker->>DB: load Situations for event camera
+      loop each Situation
+        Tracker->>DB: load open Concrete Situation
+        opt open run exceeds wait time
+          Tracker->>DB: mark run EXPIRED
+        end
+        alt no open run and on cooldown
+          Tracker->>Tracker: skip without AI call or Evaluation
+        else applicable Situation
+          Tracker->>Evaluator: check(camera event, awaited SituationEvent)
+          Evaluator->>Evaluator: select frame/video reference
+          Evaluator->>AI: check_event(EvidenceRequest)
+          alt valid model result
+            AI-->>Evaluator: EvaluatorResult(answer, confidence)
+          else model error or invalid result
+            AI-->>Evaluator: raises error or returns invalid data
+            Evaluator->>Evaluator: log warning and return unsure (0.0)
+          end
+          Evaluator-->>Tracker: result
+          Tracker->>DB: save Evaluation
+          opt answer is yes and confidence >= 0.8
+            Tracker->>DB: create or advance Concrete Situation and save Match
+            opt final SituationEvent matched
+              Tracker->>DB: mark COMPLETED and save Alert
+            end
+          end
+        end
+      end
+      Tracker->>DB: mark Camera Event handled
+      Tracker->>DB: finish transaction/savepoint
+    end
+  end
+```
+
+`process_unhandled()` selects one event at a time, so newly available earlier
+events can be picked up on the next iteration. Each event's work is isolated in
+a transaction, or a nested savepoint when the caller already has an active
+transaction; the tracker does not commit a caller-owned outer transaction. If
+processing raises an error, the transaction/savepoint rolls back and the Camera
+Event is not marked handled. The mock detector seeds fixture records rather
+than receiving live camera traffic.
