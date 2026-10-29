@@ -436,11 +436,6 @@ sequenceDiagram
   end
 ```
 
-The AI call returns an untrusted structure; Pydantic validation happens before
-database persistence. A valid Situation is committed and logged immediately.
-Invalid structures raise `InvalidSituationError`. Model-call or database errors
-are not converted into a successful-looking Situation.
-
 ### Sequence diagram: processing Camera Events
 
 ```mermaid
@@ -492,11 +487,3 @@ sequenceDiagram
     end
   end
 ```
-
-`process_unhandled()` selects one event at a time, so newly available earlier
-events can be picked up on the next iteration. Each event's work is isolated in
-a transaction, or a nested savepoint when the caller already has an active
-transaction; the tracker does not commit a caller-owned outer transaction. If
-processing raises an error, the transaction/savepoint rolls back and the Camera
-Event is not marked handled. The mock detector seeds fixture records rather
-than receiving live camera traffic.
