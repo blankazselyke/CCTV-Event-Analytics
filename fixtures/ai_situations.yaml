@@ -1,0 +1,20 @@
+situations:
+  Alert me if you see smoke:
+    events:
+      - {description: Smoke is visible, evidence: frame}
+  Alert me if someone leaves a package at the door and then walks away:
+    events:
+      - {description: A person carries a package towards the door, evidence: video}
+      - {description: The package is put down at the door, evidence: video}
+      - {description: The package is on the ground and nobody is near it, evidence: frame}
+    wait_time_seconds: 300
+    cooldown_seconds: 0
+  Alert me if someone loiters in front of the embassy:
+    events:
+      - {description: A person is standing in front of the embassy, evidence: frame}
+      - {description: A person is standing in front of the embassy, evidence: frame}
+      - {description: A person is standing in front of the embassy, evidence: frame}
+    wait_time_seconds: 30
+    cooldown_seconds: 300
+  Alert me if the model returns invalid situation data:
+    events: []

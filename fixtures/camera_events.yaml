@@ -1,0 +1,17 @@
+camera_events:
+  - {id: 101, camera_id: 1, timestamp: "2025-01-01T12:00:00+00:00", frame_ref: "frame-101.jpg", video_ref: "video-101.mp4"}
+  - {id: 102, camera_id: 1, timestamp: "2025-01-01T12:00:10+00:00", frame_ref: "frame-102.jpg", video_ref: "video-102.mp4"}
+  - {id: 201, camera_id: 2, timestamp: "2025-01-01T12:00:00+00:00", frame_ref: "frame-201.jpg", video_ref: "video-201.mp4"}
+  - {id: 202, camera_id: 2, timestamp: "2025-01-01T12:00:10+00:00", frame_ref: "frame-202.jpg", video_ref: "video-202.mp4"}
+  - {id: 203, camera_id: 2, timestamp: "2025-01-01T12:00:20+00:00", frame_ref: "frame-203.jpg", video_ref: "video-203.mp4"}
+  - {id: 204, camera_id: 2, timestamp: "2025-01-01T12:00:30+00:00", frame_ref: "frame-204.jpg", video_ref: "video-204.mp4"}
+  - {id: 301, camera_id: 3, timestamp: "2025-01-01T12:00:00+00:00", frame_ref: "frame-301.jpg", video_ref: "video-301.mp4"}
+  - {id: 401, camera_id: 4, timestamp: "2025-01-01T12:00:00+00:00", frame_ref: "frame-401.jpg", video_ref: "video-401.mp4"}
+  - {id: 501, camera_id: 5, timestamp: "2025-01-01T12:00:00+00:00", frame_ref: "frame-501.jpg", video_ref: "video-501.mp4"}
+  - {id: 502, camera_id: 5, timestamp: "2025-01-01T12:07:00+00:00", frame_ref: "frame-502.jpg", video_ref: "video-502.mp4"}
+  - {id: 601, camera_id: 6, timestamp: "2025-01-01T12:00:00+00:00", frame_ref: "frame-601.jpg", video_ref: "video-601.mp4"}
+  - {id: 602, camera_id: 6, timestamp: "2025-01-01T12:00:10+00:00", frame_ref: "frame-602.jpg", video_ref: "video-602.mp4"}
+  - {id: 603, camera_id: 6, timestamp: "2025-01-01T12:00:20+00:00", frame_ref: "frame-603.jpg", video_ref: "video-603.mp4"}
+  - {id: 604, camera_id: 6, timestamp: "2025-01-01T12:00:30+00:00", frame_ref: "frame-604.jpg", video_ref: "video-604.mp4"}
+  - {id: 605, camera_id: 6, timestamp: "2025-01-01T12:00:40+00:00", frame_ref: "frame-605.jpg", video_ref: "video-605.mp4"}
+  - {id: 606, camera_id: 6, timestamp: "2025-01-01T12:00:50+00:00", frame_ref: "frame-606.jpg", video_ref: "video-606.mp4"}

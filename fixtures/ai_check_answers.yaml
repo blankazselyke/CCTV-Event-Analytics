@@ -1,0 +1,35 @@
+answers:
+  "101":
+    Smoke is visible: {answer: "yes", confidence: 0.93}
+  "102":
+    Smoke is visible: {answer: "yes", confidence: 0.94}
+  "201":
+    A person carries a package towards the door: {answer: "yes", confidence: 0.88}
+  "202":
+    The package is put down at the door: {answer: "yes", confidence: 0.91}
+  "203":
+    The package is on the ground and nobody is near it: {answer: "yes", confidence: 0.86}
+  "204":
+    A person carries a package towards the door: {answer: "no", confidence: 0.90}
+  "301":
+    Smoke is visible: {answer: "unsure", confidence: 0.55}
+  "401":
+    A person carries a package towards the door: {answer: "no", confidence: 0.91}
+  "501":
+    A person carries a package towards the door: {answer: "yes", confidence: 0.89}
+  "502":
+    A person carries a package towards the door: {answer: "no", confidence: 0.90}
+  "601":
+    A person is standing in front of the embassy: {answer: "yes", confidence: 0.90}
+  "602":
+    A person is standing in front of the embassy: {answer: "yes", confidence: 0.90}
+  "603":
+    A person is standing in front of the embassy: {answer: "yes", confidence: 0.90}
+  "604":
+    A person is standing in front of the embassy: {answer: "yes", confidence: 0.90}
+  "605":
+    A person is standing in front of the embassy: {answer: "yes", confidence: 0.90}
+  "606":
+    A person is standing in front of the embassy: {answer: "yes", confidence: 0.90}
+  "901":
+    Smoke is visible: {error: timeout}
